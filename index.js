@@ -1,4 +1,4 @@
-export const jsonPathFinder = (jsonString) => {
+export const jsonPathfinder = (jsonString) => {
     let currentLine = 1;
     let stack = []; // contains the state of the element being parse : null for an object and the current index of the array if it's an array
     let isInKey = false;
