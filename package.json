@@ -1,6 +1,6 @@
 {
   "name": "@jeanbono/json-pathfinder",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Find the line number in a json string from a json path",
   "main": "index.js",
   "scripts": {
