@@ -1,7 +1,7 @@
 const ESCAPES = { '"': '"', '\\': '\\', '/': '/', b: '\b', f: '\f', n: '\n', r: '\r', t: '\t' };
 
 export const jsonPathfinder = (jsonString) => {
-    const pathToLine = {};
+    const pathToLine = new Map();
     const n = jsonString.length;
     let line = 1;
     let i = 0;
@@ -15,18 +15,41 @@ export const jsonPathfinder = (jsonString) => {
         }
     };
 
-    // Reads a JSON string starting at jsonString[i] === '"' and returns its
-    // decoded content, with i left just past the closing quote.
-    const readString = () => {
-        let result = '';
+    // Advances past a string without decoding it — used for values, whose
+    // content is never queried, only their span.
+    const skipString = () => {
         i++; // opening quote
         while (i < n) {
             const c = jsonString[i];
             if (c === '"') {
                 i++;
+                return;
+            }
+            if (c === '\\') {
+                i += 2;
+                continue;
+            }
+            if (c === '\n') line++;
+            i++;
+        }
+    };
+
+    // Reads a JSON string starting at jsonString[i] === '"' and returns its
+    // decoded content — used for keys, since callers query decoded paths.
+    // Copies whole runs of plain characters via slice() instead of
+    // accumulating one character at a time.
+    const readString = () => {
+        let result = '';
+        let start = ++i; // opening quote
+        while (i < n) {
+            const c = jsonString[i];
+            if (c === '"') {
+                result += jsonString.slice(start, i);
+                i++;
                 return result;
             }
             if (c === '\\') {
+                result += jsonString.slice(start, i);
                 const esc = jsonString[i + 1];
                 if (esc === 'u') {
                     result += String.fromCharCode(parseInt(jsonString.slice(i + 2, i + 6), 16));
@@ -35,22 +58,21 @@ export const jsonPathfinder = (jsonString) => {
                     result += ESCAPES[esc] ?? esc ?? '';
                     i += 2;
                 }
+                start = i;
                 continue;
             }
             if (c === '\n') line++;
-            result += c;
             i++;
         }
+        result += jsonString.slice(start, i);
         return result; // unterminated string: best-effort on malformed input
     };
 
-    // Skips a value (string/object/array/number/true/false/null) at the
-    // current position, recursing into containers under `path`.
     const skipValue = (path) => {
         skipWhitespace();
         switch (jsonString[i]) {
             case '"':
-                readString();
+                skipString();
                 return;
             case '{':
                 parseObject(path);
@@ -72,7 +94,7 @@ export const jsonPathfinder = (jsonString) => {
             const keyPath = path === '' ? key : `${path}.${key}`;
             skipWhitespace();
             i++; // ':'
-            pathToLine[keyPath] = line;
+            pathToLine.set(keyPath, line);
             skipValue(keyPath);
             skipWhitespace();
             if (jsonString[i] === ',') {
@@ -101,5 +123,5 @@ export const jsonPathfinder = (jsonString) => {
 
     skipValue('');
 
-    return (path) => pathToLine[path] ?? -1;
+    return (path) => pathToLine.get(path) ?? -1;
 };
