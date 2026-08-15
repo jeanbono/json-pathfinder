@@ -3,8 +3,9 @@
   "version": "1.0.2",
   "description": "Find the line number in a json string from a json path",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test test.mjs"
   },
   "repository": {
     "type": "git",
